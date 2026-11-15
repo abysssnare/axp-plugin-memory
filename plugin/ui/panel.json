@@ -1,0 +1,15 @@
+{
+  "axpUi": "1.0",
+  "root": "main",
+  "theme": "host",
+  "state": { "query": "", "lastStats": null },
+  "nodes": [
+    { "id": "main", "type": "Scaffold", "props": { "title": "记忆库" }, "children": ["title", "list", "row"] },
+    { "id": "title", "type": "Text", "props": { "text": "当前记忆", "style": "title" } },
+    { "id": "list", "type": "Text", "props": { "text": "${surface:axp://x/io.github.abysssnare.memory/entries.list}", "style": "mono", "maxLines": 30 } },
+    { "id": "row", "type": "Row", "props": { "spacing": 8 }, "children": ["writeBtn", "searchBtn", "statsBtn"] },
+    { "id": "writeBtn", "type": "Button", "props": { "label": "写入记忆", "action": "ui.panel.write" } },
+    { "id": "searchBtn", "type": "Button", "props": { "label": "检索", "action": "ui.panel.search" } },
+    { "id": "statsBtn", "type": "Button", "props": { "label": "统计", "action": "ui.panel.stats" } }
+  ]
+}

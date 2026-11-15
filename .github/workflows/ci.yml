@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  memory-plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # AXP 规范仓库（公开）：校验器 / 参考运行时 / CLI 全部零依赖
+      - uses: actions/checkout@v4
+        with:
+          repository: abysssnare/axp
+          path: axp
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate plugin manifest
+        run: node axp/validator/src/validate.mjs plugin
+
+      - name: End-to-end demo (AXP-3 reference runtime, 27 assertions)
+        run: node test/demo.mjs
+
+      - name: Pack .axp distribution
+        run: |
+          mkdir -p dist
+          node axp/cli/bin/axp.mjs pack plugin -o dist/memory.axp
+          node axp/cli/bin/axp.mjs inspect plugin
+
+      - name: Upload .axp artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: memory-axp
+          path: dist/memory.axp
+          retention-days: 14

@@ -1,0 +1,168 @@
+{
+  "axp": "1.0",
+  "id": "io.github.abysssnare.memory",
+  "name": { "zh": "简单记忆系统", "en": "Simple Memory" },
+  "version": "1.0.0",
+  "description": "Agent 记忆插件：写入 / 读取 / 检索 / 遗忘 / 统计五件套，L0 纯沙箱、可订阅的记忆库 Surface 与声明式面板",
+  "minHost": "0.1.0",
+  "minAndroid": 26,
+  "abis": [],
+  "entry": { "js": "main.js", "engine": "quickjs" },
+  "tools": [
+    {
+      "id": "memory.write",
+      "description": "写入一条记忆：内容必填，可带标签与重要度；返回生成的完整记录（含 id 与时间戳）",
+      "input": {
+        "type": "object",
+        "properties": {
+          "content": { "type": "string", "minLength": 1 },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "importance": { "type": "string", "enum": ["low", "normal", "high"] }
+        },
+        "required": ["content"]
+      },
+      "output": { "type": "object" },
+      "impl": { "js": "tools/write.js" },
+      "sideEffects": "none",
+      "cost": "fast"
+    },
+    {
+      "id": "memory.read",
+      "description": "读取记忆：按 id 列表 / 标签过滤，支持 limit；records 由宿主状态层注入",
+      "input": {
+        "type": "object",
+        "properties": {
+          "records": { "type": "array", "items": { "type": "object" } },
+          "ids": { "type": "array", "items": { "type": "string" } },
+          "tag": { "type": "string" },
+          "limit": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "output": { "type": "object" },
+      "impl": { "js": "tools/read.js" },
+      "sideEffects": "none",
+      "cost": "fast"
+    },
+    {
+      "id": "memory.search",
+      "description": "关键词检索记忆：内容与标签的子串匹配（大小写不敏感）",
+      "input": {
+        "type": "object",
+        "properties": {
+          "records": { "type": "array", "items": { "type": "object" } },
+          "q": { "type": "string", "minLength": 1 }
+        },
+        "required": ["q"]
+      },
+      "output": { "type": "object" },
+      "impl": { "js": "tools/search.js" },
+      "sideEffects": "none",
+      "cost": "fast"
+    },
+    {
+      "id": "memory.forget",
+      "description": "按 id 遗忘一条记忆；幂等——id 不存在也返回成功",
+      "input": {
+        "type": "object",
+        "properties": { "id": { "type": "string", "minLength": 1 } },
+        "required": ["id"]
+      },
+      "output": { "type": "object" },
+      "impl": { "js": "tools/forget.js" },
+      "sideEffects": "none",
+      "cost": "fast"
+    },
+    {
+      "id": "memory.stats",
+      "description": "记忆库统计：总数 / 按标签 / 按重要度分布",
+      "input": {
+        "type": "object",
+        "properties": {
+          "records": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "output": { "type": "object" },
+      "impl": { "js": "tools/stats.js" },
+      "sideEffects": "none",
+      "cost": "fast"
+    }
+  ],
+  "surfaces": [
+    {
+      "uri": "axp://x/io.github.abysssnare.memory/entries",
+      "description": "记忆库快照流：写入 / 遗忘后由宿主推送增量，UI 与事件可订阅",
+      "views": ["list", "json"],
+      "anchor": "uri",
+      "watchable": true,
+      "auth": "L0",
+      "impl": { "js": "surfaces/entries.js" }
+    }
+  ],
+  "knowledge": [
+    {
+      "id": "memory-policy",
+      "kind": "skill",
+      "entry": "skills/memory-policy/SKILL.md",
+      "progressive": true,
+      "triggers": [
+        { "on": "axp://x/io.github.abysssnare.memory/entries", "filter": "type~'delta'" }
+      ],
+      "allowedTools": ["memory.read", "memory.search", "memory.stats"]
+    },
+    {
+      "id": "memory-recall",
+      "kind": "prompt",
+      "entry": "skills/recall-prompt.md"
+    }
+  ],
+  "agents": [
+    {
+      "id": "memory-curator",
+      "prompt": "agents/curator.md",
+      "tools": ["memory.read", "memory.search", "memory.stats"],
+      "knowledge": ["memory-policy"],
+      "model": "host-default",
+      "maxTurns": 8,
+      "privilege": "L0"
+    }
+  ],
+  "events": [
+    {
+      "on": "axp://x/io.github.abysssnare.memory/entries",
+      "run": { "js": "events/on-change.js" },
+      "privilege": "L0"
+    },
+    {
+      "on": "lifecycle/tool.after",
+      "when": { "tool": "memory.write" },
+      "run": { "js": "events/after-write.js" }
+    }
+  ],
+  "ui": {
+    "panel": { "kind": "dsl", "entry": "ui/panel.json" },
+    "lifecycle": {
+      "onLoad": "ui/onLoad.js",
+      "onReload": "ui/onReload.js",
+      "onUnload": "ui/onUnload.js"
+    },
+    "bind": [
+      { "from": "axp://x/io.github.abysssnare.memory/entries", "to": "ui.panel.list" }
+    ],
+    "actions": [
+      { "id": "ui.panel.write", "tool": "memory.write" },
+      { "id": "ui.panel.search", "tool": "memory.search" },
+      { "id": "ui.panel.stats", "tool": "memory.stats" }
+    ]
+  },
+  "capabilities": {
+    "privilege": "L0",
+    "requests": []
+  },
+  "instances": { "multi": false },
+  "runtime": { "memoryMB": 32, "cpuPct": 5, "allowDynamicCode": false },
+  "distribution": {
+    "channel": "session-install",
+    "publisher": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "signatureScheme": "apk-v3"
+  }
+}
