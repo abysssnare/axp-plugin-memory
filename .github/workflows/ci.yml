@@ -10,12 +10,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # AXP 规范仓库（公开）：校验器 / 参考运行时 / CLI 全部零依赖
+      # AXP 规范仓库（公开）：校验器 / 参考运行时 / CLI 全部零依赖。
+      # checkout@v4 在本仓库环境下曾出现产物缺失（校验器入口 MODULE_NOT_FOUND，
+      # 且与本地逐条复刻其 git 命令序列的结果不一致），故此处做存在性守卫：
+      # 不完整时自动回退 git clone，保证 job 不因动作实现抖动而红。
       - uses: actions/checkout@v4
         with:
           repository: abysssnare/axp
           path: axp
           ref: main
+
+      - name: Ensure AXP repo intact
+        run: |
+          echo "workspace: $(pwd)"
+          if [ -d axp ]; then
+            echo "axp/ entries: $(ls axp | wc -l)"
+            git -C axp log --oneline -1 2>&1 || true
+          else
+            echo "axp/ missing entirely"
+          fi
+          if [ ! -f axp/validator/src/validate.mjs ]; then
+            echo "::warning::checkout@v4 left axp/ incomplete — falling back to git clone"
+            rm -rf axp
+            git clone --depth 1 https://github.com/abysssnare/axp.git axp
+          fi
+          test -f axp/validator/src/validate.mjs
+          echo "validator present: $(wc -c < axp/validator/src/validate.mjs) bytes"
 
       - uses: actions/setup-node@v4
         with:
