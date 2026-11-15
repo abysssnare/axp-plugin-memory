@@ -3,8 +3,8 @@
  * 端到端演示：用 AXP 参考运行时（AXP-3）装载并驱动「简单记忆系统」插件。
  *
  * 用法：
- *   AXP_REPO=/path/to/axp-repo node test/demo.mjs     # 显式指定规范仓库
- *   node test/demo.mjs                                 # 依次尝试 ../axp、../../axp、./axp
+ *   AXP_REPO=<规范仓库根>/axp node test/demo.mjs   # 显式指定规范项目目录（仓库内层 axp/）
+ *   node test/demo.mjs                              # 依次尝试 ../axp/axp、./axp-src/axp、./axp/axp
  *
  * 环境要求：Node 20+；AXP 仓库（github.com/abysssnare/axp）本体零依赖。
  *
@@ -21,11 +21,13 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, '..');
 const pluginDir = path.join(repo, 'plugin');
 
+// 注意：abysssnare/axp 仓库根下还有一个内层 axp/（规范项目本体），
+// 所以候选路径一律指向「仓库根/axp」这一层。
 const candidates = [
   process.env.AXP_REPO,
-  path.resolve(repo, '../axp'),
-  path.resolve(repo, '../../axp'),
-  path.resolve(repo, './axp'),
+  path.resolve(repo, '../axp/axp'),   // git clone … ../axp
+  path.resolve(repo, './axp-src/axp'), // CI: checkout path=axp-src
+  path.resolve(repo, './axp/axp'),   // checkout path=axp（仓库根同名目录会双层嵌套）
 ].filter(Boolean);
 const axpRoot = candidates.find((p) => fs.existsSync(path.join(p, 'validator/src/validate.mjs')));
 if (!axpRoot) {

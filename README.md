@@ -34,8 +34,9 @@
 # 1. 把 AXP 规范仓库克隆到同级目录（零依赖，Node 20+）
 git clone https://github.com/abysssnare/axp.git ../axp
 
+# 注意：规范项目本体在仓库根下的 axp/ 子目录（validator / runtime / cli 都在那里）
 # 2. 校验插件清单（schema / 引用 / 权限 / UI / 事件一次跑完）
-node ../axp/validator/src/validate.mjs plugin
+node ../axp/axp/validator/src/validate.mjs plugin
 # → ALL CHECKS PASSED
 
 # 3. 端到端演示（装载 + 工具 + Surface + UI + 事件 + 审计）
@@ -43,9 +44,9 @@ node test/demo.mjs
 # → 27 passed, 0 failed
 
 # 4. 打包成 .axp 分发物（发布前需 apksigner --v3 签名）
-node ../axp/cli/bin/axp.mjs pack plugin -o memory.axp
+node ../axp/axp/cli/bin/axp.mjs pack plugin -o memory.axp
 
-# 也可以用任意路径：AXP_REPO=/path/to/axp node test/demo.mjs
+# 也可以用任意路径：AXP_REPO=<规范仓库根>/axp node test/demo.mjs
 ```
 
 CI（`.github/workflows/ci.yml`）在 GitHub Actions 上复刻同样的流程：检出两个仓库 → 校验 → 演示 → 打包上传产物。

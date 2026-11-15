@@ -47,11 +47,14 @@ AXP 参考运行时的 T1 `js` 沙箱**没有**宿主存储 API（无 fs、无�
 
 ## 安装
 
+在**规范仓库根**下执行（其内层 `axp/` 目录才是 validator / CLI 的所在；假设本插件仓库与之同级）：
+
 ```bash
-# 用规范仓库的 CLI 打包（发布前需 apksigner --v3 签名）
-node axp/cli/bin/axp.mjs pack plugin -o memory.axp
-# 校验
-node axp/validator/src/validate.mjs plugin
+# 校验（也可以直接给绝对路径）
+node axp/validator/src/validate.mjs ../axp-plugin-memory/plugin
+
+# 打包（发布前需 apksigner --v3 签名）
+node axp/cli/bin/axp.mjs pack ../axp-plugin-memory/plugin -o memory.axp
 ```
 
 `publisher` 是 64 个 `0` 的开发占位指纹（dev 策略）；生产分发必须换成真实证书指纹。
